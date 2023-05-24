@@ -1,0 +1,9 @@
+.settings/
+*.d
+*.o
+*.su
+*.mk
+*.bin
+*.elf
+*.list
+*.map
