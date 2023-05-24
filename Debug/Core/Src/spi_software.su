@@ -1,0 +1,15 @@
+spi_software.c:7:6:InitializeSPI	8	static
+spi_software.c:21:9:MCP3550_Read	32	static
+spi_software.c:44:6:DAC1220_Reset	8	static
+spi_software.c:70:6:DAC1220_Write2Bytes	24	static
+spi_software.c:83:6:DAC1220_Write3Bytes	24	static
+spi_software.c:97:6:DAC1220_Read2Bytes	32	static
+spi_software.c:111:6:DAC1220_Read3Bytes	32	static
+spi_software.c:126:6:DAC1220_Init	8	static
+spi_software.c:133:6:DAC1220_SelfCal	8	static
+spi_software.c:138:6:Read2BytesSPI	24	static
+spi_software.c:157:9:ReadByteSPI	16	static
+spi_software.c:172:6:WriteByteSPI	24	static
+spi_software.c:183:6:ClockPulse	8	static
+spi_software.c:192:6:SPIDelay	8	static
+spi_software.c:197:6:delay_ns	16	static

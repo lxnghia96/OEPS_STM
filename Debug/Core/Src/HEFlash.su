@@ -1,0 +1,2 @@
+HEFlash.c:4:9:HEFLASH_writeBlock	184	static
+HEFlash.c:35:9:HEFLASH_readBlock	168	static
