@@ -859,14 +859,14 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, CS1_Pin|CS2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SCK_GPIO_Port, SCK_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, SDIO_DAC_Pin | SCK_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, MODE_SW_Pin|I_E_SWITCH_Pin|RANGE1_Pin|RANGE2_Pin
                           |RANGE3_Pin|RANGE4_Pin|CELL_ON_Pin|TEST_PIN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : CS1_Pin CS2_Pin SCK_Pin */
-  GPIO_InitStruct.Pin = CS1_Pin|CS2_Pin|SCK_Pin;
+  GPIO_InitStruct.Pin = CS1_Pin|CS2_Pin|SDIO_DAC_Pin|SCK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
