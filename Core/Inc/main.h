@@ -88,6 +88,8 @@ void Error_Handler(void);
 #define RANGE4_GPIO_Port GPIOB
 #define CELL_ON_Pin GPIO_PIN_13
 #define CELL_ON_GPIO_Port GPIOB
+#define TEST_PIN_Pin GPIO_PIN_7
+#define TEST_PIN_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
