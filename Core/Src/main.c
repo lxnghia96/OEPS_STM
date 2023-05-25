@@ -41,6 +41,10 @@
 #define V_REF_3V3 (float)3.11
 #define V_REF_2V5 (float)2.47
 #define V_OFFSET (float)0.006
+#define START_TIMER  0
+#define WAIT_TIMER  1
+
+uint16_t currDelayMs = 0;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -92,7 +96,7 @@ typedef Dpv_Info_t dpv_info;
 
 dpv_info dpv_infor;
 
-
+uint8_t isTimeOut = false;
 
 
 
@@ -517,7 +521,35 @@ void isActiveAdcDacInteral(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     /* do nothing*/
-	HAL_GPIO_TogglePin(TEST_PIN_GPIO_Port, TEST_PIN_Pin);
+	currDelayMs++;
+}
+
+
+uint8_t delayTimeMs(uint16_t msDelay)
+{
+  uint8_t retVal = false;
+  static uint8_t proc = START_TIMER;
+  switch (proc)
+  {
+    case START_TIMER:
+      /* code */
+      HAL_TIM_Base_Start_IT(&htim2);
+      currDelayMs = 0;
+      proc = WAIT_TIMER;
+      break;
+    case WAIT_TIMER:
+      /* code */
+        if(currDelayMs >= msDelay)
+		{
+        	HAL_TIM_Base_Stop_IT(&htim2);
+        	proc = START_TIMER;
+        	retVal = true;
+		}
+        break;
+    default:
+      break;
+  }
+  return retVal;
 }
 /* USER CODE END 0 */
 
@@ -567,7 +599,7 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   InitializeIO();
-  HAL_TIM_Base_Start_IT(&htim2);
+  
 
   //isActiveAdcDacInteral();
 
@@ -578,6 +610,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	uint8_t isTimeOut = false;
     /* Receive data */
     if (1U == isRecvData)
     {
@@ -593,7 +626,11 @@ int main(void)
       interpret_command();
 
       CDC_Transmit_FS(transmit_data, transmit_data_length);
-
+    }
+    isTimeOut = delayTimeMs(500);
+    if(isTimeOut == true)
+    {
+    	HAL_GPIO_TogglePin(TEST_PIN_GPIO_Port, TEST_PIN_Pin);
     }
 
     /* USER CODE END WHILE */
