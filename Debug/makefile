@@ -68,8 +68,8 @@ all: main-build
 main-build: LibUsb.elf secondary-outputs
 
 # Tool invocations
-LibUsb.elf: $(OBJS) $(USER_OBJS) D:\18_OESP\OpenSen\Stm32Porting\Stm32F072C8T6\F072C8T6\STM32F072C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "LibUsb.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"D:\18_OESP\OpenSen\Stm32Porting\Stm32F072C8T6\F072C8T6\STM32F072C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="LibUsb.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+LibUsb.elf: $(OBJS) $(USER_OBJS) D:\18_OESP\OpenSen\OEPS\Stm32F072C8T6\F072C8T6\STM32F072C8TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "LibUsb.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"D:\18_OESP\OpenSen\OEPS\Stm32F072C8T6\F072C8T6\STM32F072C8TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="LibUsb.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
