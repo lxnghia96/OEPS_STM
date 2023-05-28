@@ -45,6 +45,9 @@
 #define WAIT_TIMER  1
 
 uint16_t currDelayMs = 0;
+
+uint8_t dpv_buff[2048];
+uint16_t dpv_length = 0;
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -98,7 +101,7 @@ dpv_info dpv_infor;
 
 uint8_t isTimeOut = false;
 
-
+uint8_t activeDpv = false;
 
 
 uint8_t adc_Internal[6];
@@ -516,12 +519,22 @@ void isActiveAdcDacInteral(void)
   dacOut = (uint32_t)((float)(V_REF_2V5 - V_OFFSET) / V_REF_3V3 * 4095);
   /* Convert to vref 3.3V*/
   HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(dacOut));
+
+  HAL_TIM_Base_Start_IT(&htim2);
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    /* do nothing*/
-	currDelayMs++;
+    if(activeDpv == true)
+    {
+        /* do nothing*/
+        if(dpv_length <= 2048)
+        {
+            currDelayMs++;
+            memcpy(&dpv_buff[dpv_length], adc_Internal,6);
+            dpv_length += 6;
+        }
+    }
 }
 
 
@@ -533,7 +546,6 @@ uint8_t delayTimeMs(uint16_t msDelay)
   {
     case START_TIMER:
       /* code */
-      HAL_TIM_Base_Start_IT(&htim2);
       currDelayMs = 0;
       proc = WAIT_TIMER;
       break;
@@ -541,7 +553,6 @@ uint8_t delayTimeMs(uint16_t msDelay)
       /* code */
         if(currDelayMs >= msDelay)
 		{
-        	HAL_TIM_Base_Stop_IT(&htim2);
         	proc = START_TIMER;
         	retVal = true;
 		}
@@ -551,6 +562,46 @@ uint8_t delayTimeMs(uint16_t msDelay)
   }
   return retVal;
 }
+
+void set_Dac_Out(float dac_out)
+{
+	uint32_t dacOutput;
+	dacOutput = (uint32_t)((dac_out) * 4095 / V_REF_3V3);
+	/* Convert to Vref 3.3V */
+	HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint32_t)(dacOutput));
+}
+
+
+void generate_dpv(void)
+{
+  static uint8_t state = 0;
+  command_read_adc_Internal();
+  switch(state)
+  {
+    case 0:
+        set_Dac_Out(dpv_infor.init_potential);
+        activeDpv = true;
+        state = 1 ;
+    case 1: 
+        if ( true == delayTimeMs(dpv_infor.period))
+        {
+            set_Dac_Out(dpv_infor.init_potential +  dpv_infor.height);
+            state= 2;
+        }
+    case 2:
+        if (true == delayTimeMs(dpv_infor.width))
+        {
+            state = 3;
+            activeDpv = false;
+        }
+    default:
+    {
+        /* do nothing */
+    }
+      
+  }
+}
+
 /* USER CODE END 0 */
 
 /**
@@ -600,9 +651,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   InitializeIO();
   
-
-  //isActiveAdcDacInteral();
-
+  isActiveAdcDacInteral();
 
   /* USER CODE END 2 */
 
@@ -627,12 +676,15 @@ int main(void)
 
       CDC_Transmit_FS(transmit_data, transmit_data_length);
     }
+
     isTimeOut = delayTimeMs(500);
+
     if(isTimeOut == true)
     {
     	HAL_GPIO_TogglePin(TEST_PIN_GPIO_Port, TEST_PIN_Pin);
     }
 
+    generate_dpv();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
