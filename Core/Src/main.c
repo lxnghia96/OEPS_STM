@@ -28,6 +28,7 @@
 #include "string.h"
 #include "usbd_cdc_if.h"
 #include <stdbool.h>
+#include <math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -46,19 +47,25 @@
 #define WAIT_TIMER  1
 #define NOT_DONE 	(false)
 #define DONE 		(true)
-#define RECORD_SIZE 2048
-#define TIME_STAMP_RECORD 2
+
+#define RECORD_SIZE 	600
+#define RECORD_EMPTY 	0
+#define TIME_STAMP_RECORD 5			/* 5 ms */
+
+#define RECORD_TRANS 200
+#define LENGTH_SIZE 2
+#define TRANS_LENGTH 0
+#define TRANS_DATA 1
 
 uint16_t currDelayMs = 0;
 
-uint8_t dpv_buff[RECORD_SIZE];
-uint16_t dpv_length = 0;
-
-
 uint32_t g_dpv_current_potential = 0;
 uint8_t g_pdv_current_Segment = 0;
-uint8_t pdv_raising_state = 0;
-uint8_t pdv_falling_state = 0;
+uint8_t dpv_raising_state = 0;
+uint8_t dpv_falling_state = 0;
+uint8_t dpvIsComplete = false;
+uint8_t isActiveDpv = false;
+
 
 /* USER CODE END PD */
 
@@ -106,6 +113,13 @@ typedef struct Dpv_Info_t
   uint16_t pre_pulse_width;
 }Dpv_Info_t;
 
+typedef struct Dpv_Record_t
+{
+  uint16_t length;
+  uint8_t buff[RECORD_SIZE];
+}Dpv_Record_t;
+
+Dpv_Record_t dpv_record;
 
 typedef Dpv_Info_t dpv_info;
 
@@ -122,8 +136,8 @@ bool isActiveAdcInternal = false;
 volatile bool isUpdate = true;
 static const uint8_t *received_data;
 static uint8_t received_data_length;
-static uint8_t transmit_data[128];
-static uint8_t transmit_data_length;
+static uint8_t transmit_data[256];
+static uint16_t transmit_data_length;
 static uint8_t heflashbuffer[HEFLASH_SIZE];
 extern uint8_t isRecvData;
 extern uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
@@ -131,9 +145,11 @@ extern uint8_t recvDataLen;
 volatile uint32_t adc_value = 0U;
 uint8_t updateAdcInternal(void);
 void command_set_dac_cal_Internal(const uint8_t *dac_cal_data);
-uint8_t pdv_raising(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period );
-uint8_t pdv_falling(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period);
+uint8_t dpv_raising(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period );
+uint8_t dpv_falling(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period);
 void dpv_start(const uint8_t *dpv_data);
+void dpv_update();
+void dpv_stop();
 
 /* USER CODE END PV */
 
@@ -394,10 +410,6 @@ void command_set_dac_cal_Internal(const uint8_t *dac_cal_data)
   send_OK();
 }
 
-void dpv_stop(void)
-{
-
-}
 
 void interpret_command()
 {
@@ -418,23 +430,11 @@ void interpret_command()
   else if (received_data_length == 7 && strncmp(received_data, "RANGE 4", 7) == 0)
     command_range4();
   else if (received_data_length == 10 && strncmp(received_data, "DACSET ", 7) == 0)
-#if ADC_INTERNAL
-    command_set_dac_Internal(received_data + 7);
-#else
     command_set_dac(received_data + 7);
-#endif
   else if (received_data_length == 6 && strncmp(received_data, "DACCAL", 6) == 0)
-#if ADC_INTERNAL
-    command_calibrate_dac_Internal();
-#else
     command_calibrate_dac();
-#endif
   else if (received_data_length == 7 && strncmp(received_data, "ADCREAD", 7) == 0)
-#if ADC_INTERNAL
-    command_read_adc_Internal();
-#else
     command_read_adc();
-#endif
   else if (received_data_length == 10 && strncmp(received_data, "OFFSETREAD", 10) == 0)
     command_read_offset();
   else if (received_data_length == 17 && strncmp(received_data, "OFFSETSAVE ", 11) == 0)
@@ -442,17 +442,15 @@ void interpret_command()
   else if (received_data_length == 9 && strncmp(received_data, "DACCALGET", 9) == 0)
     command_read_dac_cal();
   else if (received_data_length == 16 && strncmp(received_data, "DACCALSET ", 10) == 0)
-#if ADC_INTERNAL
-    command_set_dac_cal_Internal(received_data + 10);
-#else
     command_set_dac_cal(received_data + 10);
-#endif
   else if (received_data_length == 12 && strncmp(received_data, "SHUNTCALREAD", 12) == 0)
     command_read_shuntcalibration();
   else if (received_data_length == 21 && strncmp(received_data, "SHUNTCALSAVE ", 13) == 0)
     command_save_shuntcalibration(received_data + 13);
   else if(received_data_length == 35 && strncmp(received_data, "DPV_MEASURE", 11) == 0)
     dpv_start(received_data + 11);
+  else if(received_data_length == 8 && strncmp(received_data, "DPV_READ", 8) == 0)
+    dpv_update();
   else
     command_unknown();
 }
@@ -540,18 +538,19 @@ void isActiveAdcDacInteral(void)
   HAL_TIM_Base_Start_IT(&htim2);
 }
 
+
 /* Cakk back timer 1s */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	static uint8_t count = 0;
     if(activeDpv == true)
     {
+    	  currDelayMs++;
         /* do nothing*/
-        if((dpv_length <= RECORD_SIZE) && (count >= TIME_STAMP_RECORD))
+        if((dpv_record.length < RECORD_SIZE) && (count >= (TIME_STAMP_RECORD - 1)))
         {
-            currDelayMs++;
-            memcpy(&dpv_buff[dpv_length], adc_Internal,6);
-            dpv_length += 6;
+            memcpy(&dpv_record.buff[dpv_record.length], adc_Internal,6);
+            dpv_record.length += 6;
             count = 0;
         }
         else
@@ -604,14 +603,14 @@ void generate_dpv(void)
         {
             if ((g_pdv_current_Segment + 1) == dpv_infor.segments)
             {
-                if (DONE == pdv_raising(dpv_infor.init_potential, dpv_infor.final_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv,dpv_infor.period_dpv))
+                if (DONE == dpv_raising(dpv_infor.init_potential, dpv_infor.final_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv,dpv_infor.period_dpv))
                 {
                     g_pdv_current_Segment += 1;
                 }
             }
             else
             {
-                if(DONE == pdv_raising(dpv_infor.init_potential, dpv_infor.upper_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv, dpv_infor.period_dpv))
+                if(DONE == dpv_raising(dpv_infor.init_potential, dpv_infor.upper_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv, dpv_infor.period_dpv))
                 {
                     g_pdv_current_Segment += 1;    
                 }
@@ -619,73 +618,77 @@ void generate_dpv(void)
             }
         }
         else
-		{
+		    {
             if (g_pdv_current_Segment + 1 == dpv_infor.segments)
             {
-                if(DONE == pdv_falling(g_dpv_current_potential - dpv_infor.increment_dpv, dpv_infor.final_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv, dpv_infor.period_dpv))
+                if(DONE == dpv_falling(g_dpv_current_potential - dpv_infor.increment_dpv, dpv_infor.final_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv, dpv_infor.period_dpv))
                 {
                     g_pdv_current_Segment += 1;
                 }
             }
             else
             {
-                if (DONE == pdv_falling(g_dpv_current_potential - dpv_infor.increment_dpv, dpv_infor.lower_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv, dpv_infor.period_dpv))
+                if (DONE == dpv_falling(g_dpv_current_potential - dpv_infor.increment_dpv, dpv_infor.lower_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv, dpv_infor.period_dpv))
                 {
                     g_pdv_current_Segment += 1;
                 }
             }
-		}
+		    }
     }
     else
     {
-    	/* do nothing*/
-    	dpv_stop();
+        /* do nothing*/
+        dpvIsComplete = true;
     }
 
 }
 
-uint8_t pdv_raising(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period )
+uint8_t dpv_raising(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period )
 {
     uint8_t retVal = NOT_DONE;
-    static uint8_t pdv_raising_state = 0;
-    if (0 == pdv_raising_state)
+    static uint8_t dpv_raising_state = 0;
+    if (0 == dpv_raising_state)
     {
-        g_dpv_current_potential = startPotential;
-        set_Dac_Out((float)g_dpv_current_potential/1000);
-        pdv_raising_state = 1;
+    	g_dpv_current_potential = startPotential;
+    	dpv_raising_state = 1;
     }
-    else if (1 == pdv_raising_state)
+    if (1 == dpv_raising_state)
+    {
+        set_Dac_Out((float)g_dpv_current_potential/1000);
+        dpv_raising_state = 2;
+    }
+    else if (2 == dpv_raising_state)
     {
         if( true == delayTimeMs(Period))
         {
-            pdv_raising_state = 2;
+            dpv_raising_state = 3;
         }
         
     }
-    else if (2 == pdv_raising_state)
+    else if (3 == dpv_raising_state)
     {
         g_dpv_current_potential += Height;
         if(g_dpv_current_potential < stopPotential)
         {
             set_Dac_Out((float)g_dpv_current_potential/1000);
-            pdv_raising_state = 4;
+            dpv_raising_state = 4;
         }
         else
         {
             g_dpv_current_potential = stopPotential;
             set_Dac_Out((float)g_dpv_current_potential/1000);
-            pdv_raising_state = 5;
+            dpv_raising_state = 5;
         }
     }
-    else if (4 == pdv_raising_state)
+    else if (4 == dpv_raising_state)
     {
         if( true == delayTimeMs(Width))
         {            
             g_dpv_current_potential = g_dpv_current_potential - Height + Increment;
-            pdv_raising_state = 1;
+            dpv_raising_state = 1;
         }
     }
-    else if (5 == pdv_raising_state)
+    else if (5 == dpv_raising_state)
     {
         if (true == delayTimeMs(Width))
         {
@@ -695,51 +698,51 @@ uint8_t pdv_raising(uint16_t startPotential, uint16_t stopPotential, uint16_t He
     return retVal;
 }
 
-uint8_t pdv_falling(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period)
+uint8_t dpv_falling(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period)
 {   
     uint8_t retVal = NOT_DONE;
-    if (0 == pdv_falling_state)
+    if (0 == dpv_falling_state)
     {
         g_dpv_current_potential = startPotential;
-        pdv_falling_state = 1;
+        dpv_falling_state = 1;
     }
-    if (1 == pdv_falling_state)
+    if (1 == dpv_falling_state)
     {
         set_Dac_Out((float)g_dpv_current_potential/1000);
-        pdv_falling_state = 2;
+        dpv_falling_state = 2;
     }
-    else if (2 == pdv_falling_state)
+    else if (2 == dpv_falling_state)
     {
         if( true == delayTimeMs(Period))
         {
-            pdv_falling_state = 3;
+            dpv_falling_state = 3;
         }
             
     }
-    else if (3 == pdv_falling_state)
+    else if (3 == dpv_falling_state)
     {
         g_dpv_current_potential -= Height;
         if(g_dpv_current_potential > stopPotential)
         {            
             set_Dac_Out((float)g_dpv_current_potential/1000);
-            pdv_falling_state = 4;
+            dpv_falling_state = 4;
         }
         else
         {
             g_dpv_current_potential = stopPotential;
             set_Dac_Out((float)g_dpv_current_potential/1000);
-            pdv_falling_state = 5;
+            dpv_falling_state = 5;
         }
     }
-    else if (4 == pdv_falling_state)
+    else if (4 == dpv_falling_state)
     {
         if (true == delayTimeMs(Width))
         {
             g_dpv_current_potential = g_dpv_current_potential + Height - Increment;
-            pdv_falling_state = 1;
+            dpv_falling_state = 1;
         }
     }
-    else if (5 == pdv_falling_state)
+    else if (5 == dpv_falling_state)
     {
         if (true == delayTimeMs(Width))
         {
@@ -751,22 +754,78 @@ uint8_t pdv_falling(uint16_t startPotential, uint16_t stopPotential, uint16_t He
 
 void dpv_start(const uint8_t *dpv_data)
 {
-    pdv_raising_state = 0;
-    pdv_falling_state = 0;
-    dpv_infor.segments = (uint16_t)dpv_data[0] << 8 | dpv_data[1] ;
-    dpv_infor.direct = (uint16_t)dpv_data[2] << 8 | dpv_data[3] ;
-    dpv_infor.init_potential = (uint16_t)dpv_data[4] << 8 | dpv_data[5] ;
-    dpv_infor.upper_potential = (uint16_t)dpv_data[6] << 8 | dpv_data[7] ;
-    dpv_infor.lower_potential = (uint16_t)dpv_data[8] << 8 | dpv_data[9] ;
-    dpv_infor.final_potential = (uint16_t)dpv_data[10] << 8 | dpv_data[11] ;
-    dpv_infor.height_dpv = (uint16_t)dpv_data[12] << 8 | dpv_data[13] ;
-    dpv_infor.width_dpv = (uint16_t)dpv_data[14] << 8 | dpv_data[15] ;
-    dpv_infor.period_dpv = (uint16_t)dpv_data[16] << 8 | dpv_data[17] ;
-    dpv_infor.increment_dpv = (uint16_t)dpv_data[18] << 8 | dpv_data[19] ;
-    dpv_infor.post_pulse_width = (uint16_t)dpv_data[20] << 8 | dpv_data[21] ;
-    dpv_infor.pre_pulse_width = (uint16_t)dpv_data[22] << 8 | dpv_data[23] ;
-    send_OK();
+    isActiveAdcDacInteral();
 
+    dpv_raising_state = 0;
+    dpv_falling_state = 0;
+//    dpv_infor.segments = (uint16_t)dpv_data[0] << 8 | dpv_data[1] ;
+//    dpv_infor.direct = (uint16_t)dpv_data[2] << 8 | dpv_data[3] ;
+//    dpv_infor.init_potential = (uint16_t)dpv_data[4] << 8 | dpv_data[5] ;
+//    dpv_infor.upper_potential = (uint16_t)dpv_data[6] << 8 | dpv_data[7] ;
+//    dpv_infor.lower_potential = (uint16_t)dpv_data[8] << 8 | dpv_data[9] ;
+//    dpv_infor.final_potential = (uint16_t)dpv_data[10] << 8 | dpv_data[11] ;
+//    dpv_infor.height_dpv = (uint16_t)dpv_data[12] << 8 | dpv_data[13] ;
+//    dpv_infor.width_dpv = (uint16_t)dpv_data[14] << 8 | dpv_data[15] ;
+//    dpv_infor.period_dpv = (uint16_t)dpv_data[16] << 8 | dpv_data[17] ;
+//    dpv_infor.increment_dpv = (uint16_t)dpv_data[18] << 8 | dpv_data[19] ;
+//    dpv_infor.post_pulse_width = (uint16_t)dpv_data[20] << 8 | dpv_data[21] ;
+//    dpv_infor.pre_pulse_width = (uint16_t)dpv_data[22] << 8 | dpv_data[23] ;
+        dpv_infor.segments = 1 ;
+        dpv_infor.direct = 0 ;
+        dpv_infor.init_potential = 1000 ;
+        dpv_infor.upper_potential = 3000 ;
+        dpv_infor.lower_potential = 500 ;
+        dpv_infor.final_potential = 2000 ;
+        dpv_infor.height_dpv = 500 ;
+        dpv_infor.width_dpv = 100 ;
+        dpv_infor.period_dpv = 100 ;
+        dpv_infor.increment_dpv =  200 ;
+        dpv_infor.post_pulse_width = 10 ;
+        dpv_infor.pre_pulse_width = 50 ;
+        command_cell_on();
+    isActiveDpv = true;
+
+    /* clear double buffer */
+    send_OK();
+}
+
+uint8_t data[1] = {1};
+
+void dpv_update()
+{
+    uint8_t* p_Data = "DPV_DATA";
+    uint8_t* p_Done = "DPV_COMPLETE";
+    uint8_t* p_Wait = "DPV_WAIT";
+
+    if(dpv_record.length != RECORD_EMPTY)
+    {
+          memcpy(&transmit_data[0], p_Data, strlen(p_Data));
+          memcpy(&transmit_data[strlen(p_Data)], &dpv_record.buff, RECORD_SIZE);
+          transmit_data_length = strlen(p_Data) + RECORD_SIZE;
+          memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
+    }
+    else
+    {
+      if( true == dpvIsComplete)
+      {
+          memcpy(&transmit_data[0], p_Done, strlen(p_Done));
+          transmit_data_length = strlen(p_Done);
+      }
+      else
+      {
+          memcpy(&transmit_data[0], p_Wait, strlen(p_Wait));
+          transmit_data_length = strlen(p_Wait);
+      }
+    }
+}
+	
+
+void dpv_stop(void)
+{
+    dpvIsComplete = false;
+    isActiveDpv = false;
+    HAL_TIM_Base_Stop(&htim2);
+    MX_ADC_Init();
 }
 /* USER CODE END 0 */
 
@@ -805,7 +864,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   InitializeIO();
   
-  isActiveAdcDacInteral();
+  /* Stub for test */
+  dpv_start(data);
 
   /* USER CODE END 2 */
 
@@ -813,7 +873,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	uint8_t isTimeOut = false;
+	 dpv_update();
+
     /* Receive data */
     if (1U == isRecvData)
     {
@@ -831,9 +892,12 @@ int main(void)
       CDC_Transmit_FS(transmit_data, transmit_data_length);
     }
 
+    if(isActiveDpv == true)
+    {
+        generate_dpv();
+        command_read_adc_Internal();
+    }
 
-//    command_read_adc_Internal();
-//    generate_dpv();
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
