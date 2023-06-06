@@ -52,7 +52,7 @@
 #define USB_SIZE 	RECORD_SIZE +30
 
 #define RECORD_EMPTY 	0
-#define TIME_STAMP_RECORD 5		/* 5 ms */
+#define TIME_STAMP_RECORD 2		/* 5 ms */
 
 #define RECORD_TRANS 200
 #define LENGTH_SIZE 2
@@ -67,8 +67,8 @@ uint8_t dpv_raising_state = 0;
 uint8_t dpv_falling_state = 0;
 uint8_t dpvIsComplete = false;
 uint8_t isActiveDpv = false;
-uint32_t DataLength;
-uint8_t DataBuff[1000];
+//uint32_t DataLength;
+//uint8_t DataBuff[1000];
 
 /* USER CODE END PD */
 
@@ -809,7 +809,7 @@ void dpv_update(void)
         memcpy(&transmit_data[0], p_Data, strlen(p_Data));
         memcpy(&transmit_data[strlen(p_Data)], &dpv_record.length, LENGTH_SIZE);
         memcpy(&transmit_data[strlen(p_Data) + LENGTH_SIZE], &dpv_record.buff[0], dpv_record.length);
-        DataLength += dpv_record.length;
+//        DataLength += dpv_record.length;
         memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
 
     }
@@ -908,9 +908,7 @@ int main(void)
      if(isActiveDpv == true)
      {
          generate_dpv();
-         HAL_Delay(1);
          command_read_adc_Internal();
-         HAL_Delay(1);
 
      }
 
