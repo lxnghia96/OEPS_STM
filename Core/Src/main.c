@@ -130,8 +130,6 @@ dpv_info dpv_infor;
 
 uint8_t isTimeOut = false;
 
-uint8_t activeDpv = false;
-
 
 uint8_t adc_Internal[6];
 enum Adc_Interal adcConvert = WAIT_MEASURE;
@@ -534,7 +532,7 @@ void isActiveAdcDacInteral(void)
   HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
   HAL_GPIO_WritePin(I_E_SWITCH_GPIO_Port, I_E_SWITCH_Pin, GPIO_PIN_SET);
   isActiveAdcInternal = true;
-  activeDpv = true;
+  isActiveDpv = true;
 
   dacOut = (uint32_t)((float)(V_REF_2V5 - V_OFFSET) / V_REF_3V3 * 4095);
   /* Convert to vref 3.3V*/
@@ -548,7 +546,7 @@ void isActiveAdcDacInteral(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	static uint8_t count = 0;
-    if(activeDpv == true)
+    if(isActiveDpv == true)
     {
     	  currDelayMs++;
         /* do nothing*/
@@ -831,7 +829,7 @@ void dpv_update(void)
 
 void dpv_stop(void)
 {
-	memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
+	  memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
     dpvIsComplete = false;
     isActiveDpv = false;
     HAL_TIM_Base_Stop(&htim2);
