@@ -48,7 +48,7 @@
 #define NOT_DONE 	(false)
 #define DONE 		(true)
 
-#define RECORD_SIZE 	600
+#define RECORD_SIZE 	97
 #define USB_SIZE 	RECORD_SIZE +30
 
 #define RECORD_EMPTY 	0
