@@ -67,7 +67,7 @@ uint8_t dpv_raising_state = 0;
 uint8_t dpv_falling_state = 0;
 uint8_t dpvIsComplete = false;
 uint8_t isActiveDpv = false;
-//uint32_t DataLength;
+uint32_t DataLength;
 //uint8_t DataBuff[1000];
 
 /* USER CODE END PD */
@@ -761,6 +761,7 @@ void dpv_start(const uint8_t *dpv_data)
 
     dpv_raising_state = 0;
     dpv_falling_state = 0;
+    g_pdv_current_Segment = 0;
     dpv_infor.segments = (uint16_t)dpv_data[0] << 8 | dpv_data[1] ;
     dpv_infor.direct = (uint16_t)dpv_data[2] << 8 | dpv_data[3] ;
     dpv_infor.init_potential = (uint16_t)dpv_data[4] << 8 | dpv_data[5] ;
@@ -790,6 +791,7 @@ void dpv_start(const uint8_t *dpv_data)
 
     /* clear double buffer */
     send_OK();
+    DataLength = 0;
 }
 
 static uint8_t counter;
@@ -807,7 +809,7 @@ void dpv_update(void)
         memcpy(&transmit_data[0], p_Data, strlen(p_Data));
         memcpy(&transmit_data[strlen(p_Data)], &dpv_record.length, LENGTH_SIZE);
         memcpy(&transmit_data[strlen(p_Data) + LENGTH_SIZE], &dpv_record.buff[0], dpv_record.length);
-//        DataLength += dpv_record.length;
+        DataLength += dpv_record.length;
         memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
 
     }
@@ -816,8 +818,8 @@ void dpv_update(void)
       if( true == dpvIsComplete)
       {
     	  counter++;
-          memcpy(&transmit_data[0], p_Done, strlen(p_Done));
-      }
+        memcpy(&transmit_data[0], p_Done, strlen(p_Done));
+    }
       else
       {
     	  memcpy(&transmit_data[0], p_Data, strlen(p_Data));
@@ -829,10 +831,13 @@ void dpv_update(void)
 
 void dpv_stop(void)
 {
-	  memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
+	memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
+    memset(&dpv_infor, 0x00, sizeof(dpv_infor));
     dpvIsComplete = false;
     isActiveDpv = false;
+    g_pdv_current_Segment = 0; 
     HAL_TIM_Base_Stop(&htim2);
+    HAL_ADC_Stop(&hdac);
     MX_GPIO_Init();
     InitializeIO();
     send_OK();
