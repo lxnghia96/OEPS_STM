@@ -48,9 +48,9 @@
 #define NOT_DONE 	(false)
 #define DONE 		(true)
 
-#define RECORD_SIZE 	97
-#define USB_SIZE 	RECORD_SIZE +30
+#define USB_SIZE 	120
 
+#define RECORD_SIZE 	USB_SIZE - 30
 #define RECORD_EMPTY 	0
 #define TIME_STAMP_RECORD 2		/* 5 ms */
 
