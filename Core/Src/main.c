@@ -604,6 +604,7 @@ void generate_dpv(void)
     {
         if(0 == (g_pdv_current_Segment % 2) )
         {
+
             if ((g_pdv_current_Segment + 1) == dpv_infor.segments)
             {
                 if (DONE == dpv_raising(dpv_infor.init_potential, dpv_infor.final_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv,dpv_infor.period_dpv))
@@ -622,6 +623,7 @@ void generate_dpv(void)
         }
         else
 		    {
+
             if (g_pdv_current_Segment + 1 == dpv_infor.segments)
             {
                 if(DONE == dpv_falling(g_dpv_current_potential - dpv_infor.increment_dpv, dpv_infor.final_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv, dpv_infor.period_dpv))
@@ -649,7 +651,6 @@ void generate_dpv(void)
 uint8_t dpv_raising(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period )
 {
     uint8_t retVal = NOT_DONE;
-    static uint8_t dpv_raising_state = 0;
     if (0 == dpv_raising_state)
     {
     	g_dpv_current_potential = startPotential;
@@ -792,6 +793,8 @@ void dpv_start(const uint8_t *dpv_data)
     /* clear double buffer */
     send_OK();
     DataLength = 0;
+
+
 }
 
 static uint8_t counter;
@@ -831,7 +834,7 @@ void dpv_update(void)
 
 void dpv_stop(void)
 {
-	memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
+	  memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
     memset(&dpv_infor, 0x00, sizeof(dpv_infor));
     dpvIsComplete = false;
     isActiveDpv = false;
