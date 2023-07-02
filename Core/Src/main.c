@@ -42,11 +42,12 @@
 #define ADC_INTERNAL false
 #define V_REF_3V3 (float)3.11
 #define V_REF_2V5 (float)2.47
-#define V_OFFSET (float)0.006
+#define V_OFFSET (float)0.05
 #define START_TIMER  0
 #define WAIT_TIMER  1
 #define NOT_DONE 	(false)
 #define DONE 		(true)
+#define GAIN 		5.61
 
 #define USB_SIZE 	120
 
@@ -775,19 +776,12 @@ void dpv_start(const uint8_t *dpv_data)
     dpv_infor.increment_dpv = (uint16_t)dpv_data[18] << 8 | dpv_data[19] ;
     dpv_infor.post_pulse_width = (uint16_t)dpv_data[20] << 8 | dpv_data[21] ;
     dpv_infor.pre_pulse_width = (uint16_t)dpv_data[22] << 8 | dpv_data[23] ;
-//        dpv_infor.segments = 1 ;
-//        dpv_infor.direct = 0 ;
-//        dpv_infor.init_potential = 1000 ;
-//        dpv_infor.upper_potential = 3000 ;
-//        dpv_infor.lower_potential = 500 ;
-//        dpv_infor.final_potential = 1700 ;
-//        dpv_infor.height_dpv = 500 ;
-//        dpv_infor.width_dpv = 100 ;
-//        dpv_infor.period_dpv = 100 ;
-//        dpv_infor.increment_dpv =  200 ;
-//        dpv_infor.post_pulse_width = 10 ;
-//        dpv_infor.pre_pulse_width = 50 ;
-//        command_cell_on();
+
+    dpv_infor.init_potential = 	(uint16_t)((float) dpv_infor.init_potential / GAIN + (V_REF_2V5 + V_OFFSET) * 1000);
+    dpv_infor.upper_potential = (uint16_t)((float) dpv_infor.upper_potential / GAIN + (V_REF_2V5 + V_OFFSET) * 1000 );
+    dpv_infor.lower_potential = (uint16_t)((float) dpv_infor.lower_potential / GAIN + (V_REF_2V5 + V_OFFSET) * 1000);
+    dpv_infor.final_potential = (uint16_t)((float) dpv_infor.final_potential / GAIN + (V_REF_2V5 + V_OFFSET) * 1000);
+
     isActiveDpv = true;
 
     /* clear double buffer */
