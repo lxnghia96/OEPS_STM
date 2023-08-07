@@ -42,15 +42,16 @@
 #define ADC_INTERNAL false
 #define V_REF_3V3 (float)3.11
 #define V_REF_2V5 (float)2.47
-#define V_OFFSET (float)0.006
+#define V_OFFSET (float)0.05
 #define START_TIMER  0
 #define WAIT_TIMER  1
 #define NOT_DONE 	(false)
 #define DONE 		(true)
+#define GAIN 		5.61
 
-#define RECORD_SIZE 	97
-#define USB_SIZE 	RECORD_SIZE +30
+#define USB_SIZE 	120
 
+#define RECORD_SIZE 	USB_SIZE - 30
 #define RECORD_EMPTY 	0
 #define TIME_STAMP_RECORD 2		/* 5 ms */
 
@@ -604,6 +605,7 @@ void generate_dpv(void)
     {
         if(0 == (g_pdv_current_Segment % 2) )
         {
+
             if ((g_pdv_current_Segment + 1) == dpv_infor.segments)
             {
                 if (DONE == dpv_raising(dpv_infor.init_potential, dpv_infor.final_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv,dpv_infor.period_dpv))
@@ -622,6 +624,7 @@ void generate_dpv(void)
         }
         else
 		    {
+
             if (g_pdv_current_Segment + 1 == dpv_infor.segments)
             {
                 if(DONE == dpv_falling(g_dpv_current_potential - dpv_infor.increment_dpv, dpv_infor.final_potential, dpv_infor.height_dpv, dpv_infor.width_dpv , dpv_infor.increment_dpv, dpv_infor.period_dpv))
@@ -649,7 +652,6 @@ void generate_dpv(void)
 uint8_t dpv_raising(uint16_t startPotential, uint16_t stopPotential, uint16_t Height, uint16_t Width, uint16_t Increment, uint16_t Period )
 {
     uint8_t retVal = NOT_DONE;
-    static uint8_t dpv_raising_state = 0;
     if (0 == dpv_raising_state)
     {
     	g_dpv_current_potential = startPotential;
@@ -774,24 +776,19 @@ void dpv_start(const uint8_t *dpv_data)
     dpv_infor.increment_dpv = (uint16_t)dpv_data[18] << 8 | dpv_data[19] ;
     dpv_infor.post_pulse_width = (uint16_t)dpv_data[20] << 8 | dpv_data[21] ;
     dpv_infor.pre_pulse_width = (uint16_t)dpv_data[22] << 8 | dpv_data[23] ;
-//        dpv_infor.segments = 1 ;
-//        dpv_infor.direct = 0 ;
-//        dpv_infor.init_potential = 1000 ;
-//        dpv_infor.upper_potential = 3000 ;
-//        dpv_infor.lower_potential = 500 ;
-//        dpv_infor.final_potential = 1700 ;
-//        dpv_infor.height_dpv = 500 ;
-//        dpv_infor.width_dpv = 100 ;
-//        dpv_infor.period_dpv = 100 ;
-//        dpv_infor.increment_dpv =  200 ;
-//        dpv_infor.post_pulse_width = 10 ;
-//        dpv_infor.pre_pulse_width = 50 ;
-//        command_cell_on();
+
+    dpv_infor.init_potential = 	(uint16_t)((float) dpv_infor.init_potential / GAIN + (V_REF_2V5 + V_OFFSET) * 1000);
+    dpv_infor.upper_potential = (uint16_t)((float) dpv_infor.upper_potential / GAIN + (V_REF_2V5 + V_OFFSET) * 1000 );
+    dpv_infor.lower_potential = (uint16_t)((float) dpv_infor.lower_potential / GAIN + (V_REF_2V5 + V_OFFSET) * 1000);
+    dpv_infor.final_potential = (uint16_t)((float) dpv_infor.final_potential / GAIN + (V_REF_2V5 + V_OFFSET) * 1000);
+
     isActiveDpv = true;
 
     /* clear double buffer */
     send_OK();
     DataLength = 0;
+
+
 }
 
 static uint8_t counter;
@@ -831,7 +828,7 @@ void dpv_update(void)
 
 void dpv_stop(void)
 {
-	memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
+	  memset(&dpv_record,0x00, sizeof(Dpv_Record_t));
     memset(&dpv_infor, 0x00, sizeof(dpv_infor));
     dpvIsComplete = false;
     isActiveDpv = false;
