@@ -873,6 +873,7 @@ int main(void)
   MX_USB_DEVICE_Init();
   MX_TIM1_Init();
   MX_ADC_Init();
+  MX_DAC_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   InitializeIO();
@@ -1050,11 +1051,11 @@ static void MX_DAC_Init(void)
     Error_Handler();
   }
 
-  /** DAC channel OUT1 config
+  /** DAC channel OUT2 config
   */
   sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
-  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_1) != HAL_OK)
+  if (HAL_DAC_ConfigChannel(&hdac, &sConfig, DAC_CHANNEL_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -1175,14 +1176,17 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, CS1_Pin|CS2_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SDIO_DAC_Pin | SCK_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, SDIO_DAC_Pin|RANGE4_Pin|CELL_ON_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, MODE_SW_Pin|I_E_SWITCH_Pin|RANGE1_Pin|RANGE2_Pin
-                          |RANGE3_Pin|RANGE4_Pin|CELL_ON_Pin|TEST_PIN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, MODE_SW_Pin|I_E_SWITCH_Pin|SCK_Pin|STM_TX_Pin
+                          |STM_RX_Pin|RANGE1_Pin|RANGE2_Pin|RANGE3_Pin
+                          |TEST_PIN_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : CS1_Pin CS2_Pin SCK_Pin */
-  GPIO_InitStruct.Pin = CS1_Pin|CS2_Pin|SDIO_DAC_Pin|SCK_Pin;
+  /*Configure GPIO pins : CS1_Pin CS2_Pin SDIO_DAC_Pin RANGE4_Pin
+                           CELL_ON_Pin */
+  GPIO_InitStruct.Pin = CS1_Pin|CS2_Pin|SDIO_DAC_Pin|RANGE4_Pin
+                          |CELL_ON_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1194,10 +1198,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MODE_SW_Pin RANGE1_Pin RANGE2_Pin RANGE3_Pin
-                           RANGE4_Pin CELL_ON_Pin */
-  GPIO_InitStruct.Pin = MODE_SW_Pin|RANGE1_Pin|RANGE2_Pin|RANGE3_Pin
-                          |RANGE4_Pin|CELL_ON_Pin;
+  /*Configure GPIO pins : MODE_SW_Pin SCK_Pin STM_TX_Pin STM_RX_Pin
+                           RANGE1_Pin RANGE2_Pin RANGE3_Pin */
+  GPIO_InitStruct.Pin = MODE_SW_Pin|SCK_Pin|STM_TX_Pin|STM_RX_Pin
+                          |RANGE1_Pin|RANGE2_Pin|RANGE3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

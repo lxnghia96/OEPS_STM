@@ -68,8 +68,8 @@ void Error_Handler(void);
 #define SDIO2_GPIO_Port GPIOA
 #define SDIO_DAC_Pin GPIO_PIN_4
 #define SDIO_DAC_GPIO_Port GPIOA
-#define SCK_Pin GPIO_PIN_5
-#define SCK_GPIO_Port GPIOA
+#define STM_DAC_OUP_Pin GPIO_PIN_5
+#define STM_DAC_OUP_GPIO_Port GPIOA
 #define STM_ADC1_INP_Pin GPIO_PIN_6
 #define STM_ADC1_INP_GPIO_Port GPIOA
 #define STM_ADC2_INP_Pin GPIO_PIN_7
@@ -78,18 +78,25 @@ void Error_Handler(void);
 #define MODE_SW_GPIO_Port GPIOB
 #define I_E_SWITCH_Pin GPIO_PIN_1
 #define I_E_SWITCH_GPIO_Port GPIOB
-#define RANGE1_Pin GPIO_PIN_2
+#define SCK_Pin GPIO_PIN_2
+#define SCK_GPIO_Port GPIOB
+#define STM_TX_Pin GPIO_PIN_10
+#define STM_TX_GPIO_Port GPIOB
+#define STM_RX_Pin GPIO_PIN_11
+#define STM_RX_GPIO_Port GPIOB
+#define RANGE1_Pin GPIO_PIN_13
 #define RANGE1_GPIO_Port GPIOB
-#define RANGE2_Pin GPIO_PIN_10
+#define RANGE2_Pin GPIO_PIN_14
 #define RANGE2_GPIO_Port GPIOB
-#define RANGE3_Pin GPIO_PIN_11
+#define RANGE3_Pin GPIO_PIN_15
 #define RANGE3_GPIO_Port GPIOB
-#define RANGE4_Pin GPIO_PIN_12
-#define RANGE4_GPIO_Port GPIOB
-#define CELL_ON_Pin GPIO_PIN_13
-#define CELL_ON_GPIO_Port GPIOB
+#define RANGE4_Pin GPIO_PIN_8
+#define RANGE4_GPIO_Port GPIOA
+#define CELL_ON_Pin GPIO_PIN_9
+#define CELL_ON_GPIO_Port GPIOA
 #define TEST_PIN_Pin GPIO_PIN_7
 #define TEST_PIN_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
@@ -99,5 +106,3 @@ void Error_Handler(void);
 #endif
 
 #endif /* __MAIN_H */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

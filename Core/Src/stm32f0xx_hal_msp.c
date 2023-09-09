@@ -164,12 +164,12 @@ void HAL_DAC_MspInit(DAC_HandleTypeDef* hdac)
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**DAC GPIO Configuration
-    PA4     ------> DAC_OUT1
+    PA5     ------> DAC_OUT2
     */
-    GPIO_InitStruct.Pin = SDIO_DAC_Pin;
+    GPIO_InitStruct.Pin = STM_DAC_OUP_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(SDIO_DAC_GPIO_Port, &GPIO_InitStruct);
+    HAL_GPIO_Init(STM_DAC_OUP_GPIO_Port, &GPIO_InitStruct);
 
   /* USER CODE BEGIN DAC_MspInit 1 */
 
@@ -195,9 +195,9 @@ void HAL_DAC_MspDeInit(DAC_HandleTypeDef* hdac)
     __HAL_RCC_DAC1_CLK_DISABLE();
 
     /**DAC GPIO Configuration
-    PA4     ------> DAC_OUT1
+    PA5     ------> DAC_OUT2
     */
-    HAL_GPIO_DeInit(SDIO_DAC_GPIO_Port, SDIO_DAC_Pin);
+    HAL_GPIO_DeInit(STM_DAC_OUP_GPIO_Port, STM_DAC_OUP_Pin);
 
   /* USER CODE BEGIN DAC_MspDeInit 1 */
 
@@ -281,5 +281,3 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
