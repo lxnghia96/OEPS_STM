@@ -59,6 +59,8 @@
 #define LENGTH_SIZE 2
 #define TRANS_LENGTH 0
 #define TRANS_DATA 1
+#define GPIO_OFF 0
+#define GPIO_ON 1
 
 uint16_t currDelayMs = 0;
 
@@ -196,12 +198,12 @@ void Adc_read_I_Measure(void)
 void InitializeIO()
 {
   HAL_TIM_Base_Start(&htim1);
-  HAL_GPIO_WritePin(MODE_SW_GPIO_Port, MODE_SW_Pin, GPIO_PIN_RESET); // initialize mode to potentiostatic
-  HAL_GPIO_WritePin(CELL_ON_GPIO_Port, CELL_ON_Pin, GPIO_PIN_SET);   // initialize cell to off position
-  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_PIN_RESET);   // initialize range to range 1
-  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MODE_SW_GPIO_Port, MODE_SW_Pin, GPIO_ON); // initialize mode to potentiostatic
+  HAL_GPIO_WritePin(CELL_ON_GPIO_Port, CELL_ON_Pin, GPIO_ON);   // initialize cell to off position
+  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_OFF);   // initialize range to range 1
+  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_ON);
   InitializeSPI();
   HAL_Delay(25); // power-up delay - necessary for DAC1220
   DAC1220_Reset();
@@ -229,65 +231,65 @@ void send_OK()
 
 void command_cell_on()
 {
-  HAL_GPIO_WritePin(CELL_ON_GPIO_Port, CELL_ON_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(CELL_ON_GPIO_Port, CELL_ON_Pin, GPIO_ON);
   send_OK();
 }
 
 void command_cell_off()
 {
-  HAL_GPIO_WritePin(CELL_ON_GPIO_Port, CELL_ON_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(CELL_ON_GPIO_Port, CELL_ON_Pin, GPIO_ON);
   send_OK();
 }
 
 void command_mode_potentiostatic()
 {
-  HAL_GPIO_WritePin(MODE_SW_GPIO_Port, MODE_SW_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(MODE_SW_GPIO_Port, MODE_SW_Pin, GPIO_OFF);
   send_OK();
 }
 
 void command_mode_galvanostatic()
 {
-  HAL_GPIO_WritePin(MODE_SW_GPIO_Port, MODE_SW_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(MODE_SW_GPIO_Port, MODE_SW_Pin, GPIO_OFF);
   send_OK();
 }
 
 void command_range1()
 {
-  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_OFF);
   HAL_Delay(10); // make the new relay setting before breaking the old one
-  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_ON);
   send_OK();
 }
 
 void command_range2()
 {
-  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_OFF);
   HAL_Delay(10); // make the new relay setting before breaking the old one
-  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_ON);
   send_OK();
 }
 
 void command_range3()
 {
-  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_OFF);
   HAL_Delay(10); // make the new relay setting before breaking the old one
-  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_ON);
   send_OK();
 }
 
 void command_range4()
 {
-  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(RANGE4_GPIO_Port, RANGE4_Pin, GPIO_OFF);
   HAL_Delay(10); // make the new relay setting before breaking the old one
-  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(RANGE1_GPIO_Port, RANGE1_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE2_GPIO_Port, RANGE2_Pin, GPIO_ON);
+  HAL_GPIO_WritePin(RANGE3_GPIO_Port, RANGE3_Pin, GPIO_ON);
   send_OK();
 }
 
@@ -531,7 +533,7 @@ void isActiveAdcDacInteral(void)
   uint32_t dacOut = 0;
   MX_DAC_Init();
   HAL_DAC_Start(&hdac, DAC_CHANNEL_1);
-  HAL_GPIO_WritePin(I_E_SWITCH_GPIO_Port, I_E_SWITCH_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(I_E_SWITCH_GPIO_Port, I_E_SWITCH_Pin, GPIO_ON);
   isActiveAdcInternal = true;
   isActiveDpv = true;
 
@@ -1173,15 +1175,15 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, CS1_Pin|CS2_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, CS1_Pin|CS2_Pin, GPIO_ON);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, SDIO_DAC_Pin|RANGE4_Pin|CELL_ON_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, SDIO_DAC_Pin|RANGE4_Pin|CELL_ON_Pin, GPIO_OFF);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, MODE_SW_Pin|I_E_SWITCH_Pin|SCK_Pin|STM_TX_Pin
                           |STM_RX_Pin|RANGE1_Pin|RANGE2_Pin|RANGE3_Pin
-                          |TEST_PIN_Pin, GPIO_PIN_RESET);
+                          |TEST_PIN_Pin, GPIO_OFF);
 
   /*Configure GPIO pins : CS1_Pin CS2_Pin SDIO_DAC_Pin RANGE4_Pin
                            CELL_ON_Pin */
