@@ -6,3 +6,4 @@
 *.elf
 *.list
 *.map
+Debug/
