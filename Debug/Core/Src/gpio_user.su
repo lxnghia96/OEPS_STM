@@ -1,2 +1,0 @@
-gpio_user.c:4:6:InitIoPinOutput	48	static
-gpio_user.c:14:6:InitIoPinInput	48	static
