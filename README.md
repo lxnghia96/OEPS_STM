@@ -2,10 +2,10 @@
 A USB-controlled potentiostat/galvanostat for thin-film battery characterization based on tdstatv3
 https://github.com/thomasdob/tdstatv3/
 
+
 ## Introduction
 This repository contains all the necessary design files to build your own USB-controlled potentiostat/galvanostat.
-
-## Repository contents
+Porting from Pic 16F1459 to STM32F072
 
 ### Directories
 
